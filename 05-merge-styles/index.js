@@ -1,26 +1,26 @@
-const path = require('path');
-const fs = require('fs');
+const {join, parse} = require('path');
+const {createReadStream} = require('fs')
+const {writeFile, readdir, appendFile} = require('fs/promises');
 
-function bundleCSS() {
+async function bundleCSS() {
   try {
-    const bundlePath = path.join(__dirname, 'project-dist' ,'bundle.css');
-    fs.writeFile(bundlePath, '', async () => {
-      const stylesFiles = await fs.promises.readdir(path.join(__dirname, 'styles'), {withFileTypes: true});
-      for(const file of stylesFiles) {
-        if(file.isFile()) {
-          const filePath = path.join(__dirname, 'styles', file.name);
-          const ext = path.parse(filePath).ext;
-          if(ext === '.css') {
-            
-            const readStream = fs.createReadStream(filePath, 'utf-8');
-            
-            let text = ''
-            readStream.on('data', (data) => text += data);
-            readStream.on('end', () => fs.appendFile(bundlePath, text, () => ''));
-          }
+    const bundlePath = join(__dirname, 'project-dist' ,'bundle.css');
+    await writeFile(bundlePath, '');
+    const stylesFiles = await readdir(join(__dirname, 'styles'), {withFileTypes: true});
+    for(const file of stylesFiles) {
+      if(file.isFile()) {
+        const filePath = join(__dirname, 'styles', file.name);
+        const ext = parse(filePath).ext;
+        if(ext === '.css') {
+          
+          const readStream = createReadStream(filePath, 'utf-8');
+          
+          let text = ''
+          readStream.on('data', (data) => text += data);
+          readStream.on('end', () => appendFile(bundlePath, text));
         }
       }
-    });
+    }
   } catch(err) {
     console.error(err);
   }
