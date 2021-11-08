@@ -1,17 +1,18 @@
-const path = require('path');
-const fs = require('fs');
+const {join, parse} = require('path');
+const {createReadStream, createWriteStream} = require('fs');
+const {rm, mkdir, readFile, appendFile, readdir, copyFile, writeFile} = require('fs/promises');
 
 async function build() {
   try {
-    const buildPath =  path.join(__dirname, 'project-dist'),
-          buildHTMLPath = path.join(buildPath ,'index.html'),
-          componentsPath = path.join(__dirname, 'components'),
-          templatePath = path.join(__dirname, 'template.html');
-    await fs.promises.rm(buildPath, { recursive: true});
-    fs.promises.mkdir(buildPath, {recursive: true});
+    const buildPath =  join(__dirname, 'project-dist'),
+          buildHTMLPath = join(buildPath ,'index.html'),
+          componentsPath = join(__dirname, 'components'),
+          templatePath = join(__dirname, 'template.html');
+    await rm(buildPath, { force: true, recursive: true});
+    await mkdir(buildPath, {recursive: true});
 
-    const readStream = fs.createReadStream(templatePath, 'utf-8');
-    const writeStream = fs.createWriteStream(buildHTMLPath);
+    const readStream = createReadStream(templatePath, 'utf-8');
+    const writeStream = createWriteStream(buildHTMLPath);
 
     readStream.on('data', async (data) => {
       const replacedHTML = await replaceTags();
@@ -23,7 +24,7 @@ async function build() {
         const templateTags = htmlText.match(/{{.+}}/gi);
         for(let item of templateTags) {
           const tagName = item.match(/\w+/)[0];
-          const component = await fs.promises.readFile(path.join(componentsPath, `${tagName}.html`));
+          const component = await readFile(join(componentsPath, `${tagName}.html`));
           htmlText = htmlText.replace(new RegExp(item, 'g'), component.toString());
         }
         return htmlText;
@@ -31,32 +32,31 @@ async function build() {
     });
 
     bundleCSS();
-    copyDir(path.join(__dirname, 'assets'), path.join(__dirname, 'project-dist', 'assets'));
+    copyDir(join(__dirname, 'assets'), join(__dirname, 'project-dist', 'assets'));
   } catch(err) {
     console.error(err);
   }
 }
 
-function bundleCSS() {
+async function bundleCSS() {
   try {
-    const bundlePath = path.join(__dirname, 'project-dist' ,'style.css');
-    fs.writeFile(bundlePath, '', async () => {
-      const stylesFiles = await fs.promises.readdir(path.join(__dirname, 'styles'), {withFileTypes: true});
-      for(const file of stylesFiles) {
-        if(file.isFile()) {
-          const filePath = path.join(__dirname, 'styles', file.name);
-          const ext = path.parse(filePath).ext;
-          if(ext === '.css') {
-            
-            const readStream = fs.createReadStream(filePath, 'utf-8');
-            
-            let text = ''
-            readStream.on('data', (data) => text += data);
-            readStream.on('end', () => fs.appendFile(bundlePath, text, () => ''));
-          }
+    const bundlePath = join(__dirname, 'project-dist' ,'style.css');
+    await writeFile(bundlePath, '');
+    const stylesFiles = await readdir(join(__dirname, 'styles'), {withFileTypes: true});
+    for(const file of stylesFiles) {
+      if(file.isFile()) {
+        const filePath = join(__dirname, 'styles', file.name);
+        const ext = parse(filePath).ext;
+        if(ext === '.css') {
+          
+          const readStream = createReadStream(filePath, 'utf-8');
+          
+          let text = ''
+          readStream.on('data', (data) => text += data);
+          readStream.on('end', () => appendFile(bundlePath, text + '\n'));
         }
       }
-    });
+    }
   } catch(err) {
     console.error(err);
   }
@@ -64,15 +64,15 @@ function bundleCSS() {
 
 async function copyDir(dirPath, copyDirPath) {
   try {
-    fs.promises.mkdir(copyDirPath, {recursive: true});
-    const files = await fs.promises.readdir(dirPath, {withFileTypes: true});
+    await mkdir(copyDirPath, {recursive: true});
+    const files = await readdir(dirPath, {withFileTypes: true});
     for(const file of files) {
       if(file.isFile()) {
-        const filePath = path.join(dirPath, file.name);
-        const copyPath = path.join(copyDirPath, file.name);
-        fs.promises.copyFile(filePath, copyPath);
+        const filePath = join(dirPath, file.name);
+        const copyPath = join(copyDirPath, file.name);
+        copyFile(filePath, copyPath);
       } else {
-        copyDir(path.join(dirPath, file.name), path.join(copyDirPath, file.name));
+        copyDir(join(dirPath, file.name), join(copyDirPath, file.name));
       }
     }
   } catch(err) {
