@@ -10,10 +10,8 @@ async function readFolder() {
         const info = path.parse(filePath);
         const name = info.name;
         const ext = info.ext.slice(1);
-        let size;
         fs.stat(filePath, (err, stats) => {
-          size = Math.round(stats.size / 1024 * 100) / 100;
-          console.log(`${name} - ${ext} - ${size}kb `)
+          console.log(`${name} - ${ext} - ${stats.size} byte `)
         });
       }
     }
