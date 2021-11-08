@@ -1,17 +1,19 @@
 const { stdin, stdout } = process;
 const path = require('path')
-const fs = require('fs');
+const {writeFile, appendFile} = require('fs');
 
+const textPath = path.join(__dirname, 'text.txt');
 
-const output = fs.createWriteStream(path.join(__dirname, 'text.txt'));
 stdout.write('Введите текст для записи\n');
-stdin.on('data', (data) => {
-  if(data.toString().trim() === 'exit') {
-    stopInput();
-  }
-  output.write(data)
-  }
-);
+writeFile(textPath, '', () => {
+  stdin.on('data', (data) => {
+    if(data.toString().trim() === 'exit') {
+      stopInput();
+    }
+    appendFile(textPath, data, () => '');
+    }
+  );
+});
 
 process.on('SIGINT', stopInput);
 
