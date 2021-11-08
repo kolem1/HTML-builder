@@ -17,7 +17,7 @@ async function bundleCSS() {
           
           let text = ''
           readStream.on('data', (data) => text += data);
-          readStream.on('end', () => appendFile(bundlePath, text));
+          readStream.on('end', () => appendFile(bundlePath, text + '\n'));
         }
       }
     }
